@@ -1,0 +1,21 @@
+[project]
+name = "aco-codes"
+version = "0.1.0"
+description = "Default template for PDM package"
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+  "matplotlib>=3.10.3",
+  "numpy>=2.3.1",
+  "pandas>=2.3.0",
+  "pandas-stubs>=2.3.0.250703",
+]
+authors = [{ name = "Rafael Bahiense", email = "rbahiensebraptor@gmail.com" }]
+license = { text = "MIT" }
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.scripts]
+agro = "src/aco_agro.py"
+x2 = "src/aco_x2.py"
