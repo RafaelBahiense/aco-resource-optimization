@@ -1,101 +1,153 @@
 # ACO Codes
 
-Algoritmos baseados em **Ant Colony Optimization (ACO)** para resolver problemas de otimização:
+Implementações baseadas em **Ant Colony Optimization (ACO)** aplicadas a problemas de otimização contínua e agroeconômica, com ênfase em **Agricultura 4.0**.
 
-1. **Minimização da função quadrática f(x) = x²** (`aco_x2.py`)
-2. **Otimização da produção do meloeiro** (`aco_agro.py`)
+O repositório contém duas aplicações principais:
+
+1. `aco_x2.py` — **Minimização da função f(x)=x²** (exemplo didático)
+2. `aco_agro.py` — **Otimização de insumos hídricos e nitrogenados** em culturas agrícolas (melão e alface-americana)
 
 ---
 
-## Requisitos
-
-- Python `3.12`
-- [PDM](https://pdm-project.org) (gerenciador de pacotes Python)
-
 ## Instalação
 
-1. Clone o repositório:
+### Requisitos
+
+- Python **3.12+**
+- [PDM](https://pdm-project.org) (gerenciador de pacotes Python)
+
+### Passos
 
 ```bash
-git clone
+git clone https://github.com/RafaelBahiense/aco_codes.git
 cd aco-codes
-```
-
-2. Instale as dependências com PDM:
-
-```bash
 pdm install
 ```
 
 ---
 
-## `aco_x2.py`: ACO para minimizar f(x) = x²
+## Estrutura geral
 
-Esse script aplica ACO para encontrar o mínimo da função:
-
-```text
-f(x) = x²
+```
+src/
+ ├── aco_x2.py      # ACO 1D para f(x)=x²
+ ├── aco_agro.py    # ACO 2D para funções de produção agrícolas
+docs/
+ └── ...            # Documentação técnica detalhada
+outputs/
+ ├── *.csv          # Histórico das iterações
+ ├── *.png          # Gráficos de convergência / heatmap / superfície 3D
+ └── *.json         # Metadados com melhor solução e ótimo analítico
 ```
 
-### Uso via CLI:
+---
 
-```bash
-python src/aco_x2.py [opções]
-```
+## `aco_x2.py`: ACO 1D (Função Quadrática)
 
-#### Opções disponíveis:
+Script simples para validar o comportamento do ACO na minimização de uma função contínua:
 
-| Flag                     | Descrição                     | Padrão                   |
-| ------------------------ | ----------------------------- | ------------------------ |
-| `--iterations`           | Número de iterações           | `100`                    |
-| `--n_ants`               | Número de formigas            | `50`                     |
-| `--evaporation_rate`     | Taxa de evaporação            | `0.9`                    |
-| `--early_stop_threshold` | Critério de parada antecipada | `1e-5`                   |
-| `--upper_bound`          | Limite superior do domínio    | `10.0`                   |
-| `--lower_bound`          | Limite inferior do domínio    | `-10.0`                  |
-| `--plot`                 | Mostrar gráfico               | `False`                  |
-| `--save_plot CAMINHO`    | Caminho para salvar gráfico   | `plots/aco_progress.png` |
+$$
+f(x) = x^2
+$$
 
-#### Exemplo:
+### Uso via CLI
 
 ```bash
 pdm run x2 --iterations 150 --plot --verbose
 ```
 
+| Flag                     | Descrição                   | Padrão                   |
+| ------------------------ | --------------------------- | ------------------------ |
+| `--iterations`           | Iterações                   | `100`                    |
+| `--n_ants`               | Formigas                    | `50`                     |
+| `--evaporation_rate`     | Taxa de evaporação          | `0.9`                    |
+| `--early_stop_threshold` | Parada antecipada           | `1e-5`                   |
+| `--upper_bound`          | Limite superior             | `10.0`                   |
+| `--lower_bound`          | Limite inferior             | `-10.0`                  |
+| `--plot`                 | Exibe gráfico               | `False`                  |
+| `--save_plot`            | Caminho para salvar gráfico | `plots/aco_progress.png` |
+
 ---
 
-## `aco_agro.py`: ACO para otimização da produção do meloeiro
+## `aco_agro.py`: ACO 2D (Agricultura 4.0)
 
-Simula o cultivo do meloeiro ajustando:
+Algoritmo de **colônia de formigas 2D** aplicado à otimização de **água (w)** e **nitrogênio (n)** em culturas agrícolas.
 
-- **Lâmina de água (w)** em mm
-- **Dose de nitrogênio (n)** em kg/ha
+### Modelos disponíveis
 
-### Função de produção
+| Cultura              | Função de produção (rendimento `y`)                              | Intervalos (w, n)           |
+| -------------------- | ---------------------------------------------------------------- | --------------------------- |
+| **Meloeiro**         | (y = 34.16737n + 70.77509w - 0.05781w^2 - 0.07612n^2)            | (0–700 mm, 0–350 kg N/ha)   |
+| **Alface-americana** | (y = -12.49 + 388.1w - 6.02n - 1.042w^2 - 0.04563n^2 + 0.1564wn) | (0–250 mm, 100–240 kg N/ha) |
 
-```text
-Yield(w, n) = 34.16737 * n + 70.77509 * w - 0.05781 * w² - 0.07612 * n²
-```
+### Função-objetivo
 
-### Uso via CLI:
+$$
+R(w,n) = p_y \cdot y(w,n) - c_w \cdot w - c_n \cdot n
+$$
 
-```bash
-pdm run agro [opções]
-```
+onde:
 
-#### Opções disponíveis:
+- (p_y) é o preço do produto (R$/kg),
+- (c_w) e (c_n) são custos unitários de água e nitrogênio.
 
-| Flag                  | Descrição                       | Padrão                   |
-| --------------------- | ------------------------------- | ------------------------ |
-| `--iterations`        | Número de iterações             | `200`                    |
-| `--n_ants`            | Número de formigas por iteração | `50`                     |
-| `--evaporation_rate`  | Taxa de evaporação              | `0.9`                    |
-| `--verbose`           | Exibir logs detalhados (`INFO`) | `False`                  |
-| `--plot`              | Exibir gráficos ao final        | `False`                  |
-| `--save_plot CAMINHO` | Salvar gráfico 2D               | `plots/aco_meloeiro.png` |
+---
 
-#### Exemplo:
+## Uso via CLI
 
 ```bash
-pdm run agro --iterations 300 --n_ants 80 --plot --verbose
+pdm run agro --crop melon --objective revenue
 ```
+
+| Flag               | Descrição                                              | Padrão     |
+| ------------------ | ------------------------------------------------------ | ---------- |
+| `--crop`           | `lettuce` ou `melon`                                   | `melon`    |
+| `--objective`      | `revenue` (receita líquida) ou `yield` (produtividade) | `revenue`  |
+| `--iters`          | Iterações                                              | `1000`     |
+| `--ants`           | Formigas por iteração                                  | `200`      |
+| `--alpha`          | Peso do feromônio (τ^α)                                | `1.0`      |
+| `--beta`           | Peso da heurística (η^β)                               | `1.0`      |
+| `--rho`            | Evaporação (0–1)                                       | `0.1`      |
+| `--q`              | Escala do depósito                                     | `1.0`      |
+| `--elitist_weight` | Reforço no melhor global                               | `2.0`      |
+| `--topk_fraction`  | Fração dos melhores que depositam                      | `0.2`      |
+| `--seed`           | Semente aleatória                                      | `42`       |
+| `--out_dir`        | Diretório de saída                                     | `outputs/` |
+
+---
+
+## Exemplos de execução
+
+### Meloeiro — receita líquida
+
+```bash
+pdm run agro --crop melon --objective revenue --iters 1000 --ants 200
+```
+
+### Meloeiro — produtividade
+
+```bash
+pdm run agro --crop melon --objective yield
+```
+
+### Alface-americana — receita líquida
+
+```bash
+pdm run agro --crop lettuce --objective revenue
+```
+
+---
+
+## Saídas geradas
+
+A cada execução, o ACO gera automaticamente:
+
+| Tipo | Arquivo             | Descrição                                  |
+| ---- | ------------------- | ------------------------------------------ |
+| CSV  | `*_history.csv`     | Histórico por iteração                     |
+| PNG  | `*_convergence.png` | Curva de convergência                      |
+| PNG  | `*_heatmap.png`     | Mapa de contorno da função                 |
+| PNG  | `*_surface3d.png`   | Superfície 3D com colormap                 |
+| JSON | `*_meta.json`       | Melhor solução e ótimo analítico projetado |
+
+---
