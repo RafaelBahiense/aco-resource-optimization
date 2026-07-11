@@ -18,3 +18,15 @@ outputs/*
 
 # Context files
 base
+
+# Test/cache tools
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
