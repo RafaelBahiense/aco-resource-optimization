@@ -15,3 +15,6 @@ outputs/*
 
 # PDM
 .pdm-python
+
+# Context files
+base

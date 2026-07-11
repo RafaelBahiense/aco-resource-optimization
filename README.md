@@ -1,11 +1,12 @@
 # ACO Codes
 
-Implementações baseadas em **Ant Colony Optimization (ACO)** aplicadas a problemas de otimização contínua e agroeconômica, com ênfase em **Agricultura 4.0**.
+Implementações baseadas em **Ant Colony Optimization (ACO)** aplicadas a problemas de otimização contínua, agricultura 4.0 e qualidade da energia elétrica.
 
-O repositório contém duas aplicações principais:
+O repositório contém três aplicações principais:
 
 1. `aco_x2.py` — **Minimização da função f(x)=x²** (exemplo didático)
 2. `aco_agro.py` — **Otimização de insumos hídricos e nitrogenados** em culturas agrícolas (melão e alface-americana)
+3. `aco_eletrica.py` — **Estimação harmônica em sinais elétricos** com ACO contínuo (ACOR)
 
 ---
 
@@ -32,12 +33,13 @@ pdm install
 src/
  ├── aco_x2.py      # ACO 1D para f(x)=x²
  ├── aco_agro.py    # ACO 2D para funções de produção agrícolas
+ ├── aco_eletrica.py # ACOR para estimação de harmônicos elétricos
 docs/
  └── ...            # Documentação técnica detalhada
 outputs/
  ├── *.csv          # Histórico das iterações
- ├── *.png          # Gráficos de convergência / heatmap / superfície 3D
- └── *.json         # Metadados com melhor solução e ótimo analítico
+ ├── *.png          # Gráficos de convergência / reconstrução / espectro / superfícies
+ └── *.json         # Metadados com melhor solução e informações do experimento
 ```
 
 ---
@@ -138,16 +140,109 @@ pdm run agro --crop lettuce --objective revenue
 
 ---
 
+## `aco_eletrica.py`: ACOR para Estimação Harmônica
+
+Algoritmo de **ACO para domínios contínuos (ACOR)** aplicado à estimação dos parâmetros harmônicos de sinais elétricos de tensão e corrente. O código replica os cenários sintéticos de Rabêlo et al. (2011), com componente contínua (CC) de decaimento exponencial e 7 harmônicos.
+
+### Modelo do sinal
+
+$$
+x(t) = x_0 e^{-\lambda t} + \sum_{k=1}^{N_h}\left[a_k\cos(k\omega_0 t) + b_k\sin(k\omega_0 t)\right]
+$$
+
+O vetor estimado pelo ACOR segue a ordem:
+
+```text
+[x0, lambda, Ac_1, As_1, ..., Ac_7, As_7]
+```
+
+### Sinais disponíveis
+
+| Sinal     | Origem                 | Descrição                                      |
+| --------- | ---------------------- | ---------------------------------------------- |
+| `voltage` | Rabêlo et al. (2011)   | Forma de onda sintética de tensão com 7 harmônicos |
+| `current` | Rabêlo et al. (2011)   | Forma de onda sintética de corrente com 7 harmônicos |
+
+### Uso via CLI
+
+```bash
+pdm run python src/aco_eletrica.py --signal voltage --samples 64 --iters 3000
+```
+
+```bash
+pdm run python src/aco_eletrica.py --signal current --samples 64 --iters 3000
+```
+
+| Flag          | Descrição                                           | Padrão     |
+| ------------- | --------------------------------------------------- | ---------- |
+| `--signal`    | `voltage` (tensão) ou `current` (corrente)          | `voltage`  |
+| `--samples`   | Amostras na janela de 1 ciclo                       | `64`       |
+| `--k`         | Tamanho da memória de soluções do ACOR              | `50`       |
+| `--ants`      | Soluções geradas por iteração                       | `30`       |
+| `--q`         | Pressão de seleção / localidade                     | `0.1`      |
+| `--xi`        | Velocidade de convergência (espalhamento da busca)  | `0.85`     |
+| `--iters`     | Número máximo de iterações                          | `1000`     |
+| `--noise_snr` | SNR do ruído de medição em dB                       | `None`     |
+| `--seed`      | Semente aleatória                                   | `42`       |
+| `--out_dir`   | Diretório de saída                                  | `outputs/` |
+
+### Exemplos de execução
+
+#### Tensão — cenário comparável ao Rabêlo et al. (2011)
+
+```bash
+pdm run python src/aco_eletrica.py --signal voltage --samples 64 --iters 3000 --seed 42 --out_dir outputs
+```
+
+#### Corrente — cenário comparável ao Rabêlo et al. (2011)
+
+```bash
+pdm run python src/aco_eletrica.py --signal current --samples 64 --iters 3000 --seed 42 --out_dir outputs
+```
+
+#### Tensão com ruído gaussiano
+
+```bash
+pdm run python src/aco_eletrica.py --signal voltage --samples 64 --iters 3000 --noise_snr 30
+```
+
+### Comparação com Rabêlo et al. (2011)
+
+O código calcula:
+
+- resultado do **ACOR proposto**;
+- resultado da **TDF local**;
+- erro percentual por parâmetro;
+- RMSE da reconstrução.
+
+Os valores publicados por Rabêlo et al. (2011) para PSO e TDF são mantidos como baseline bibliográfico no arquivo `*_meta.json`. O PSO não é reimplementado neste script.
+
+### Saídas geradas
+
+Cada execução gera arquivos com prefixo `eletrica_{signal}_` em `--out_dir`:
+
+| Tipo | Arquivo                 | Descrição                                      |
+| ---- | ----------------------- | ---------------------------------------------- |
+| CSV  | `*_history.csv`         | Histórico de convergência por iteração         |
+| PNG  | `*_convergence.png`     | Curva de convergência do RMSE                  |
+| PNG  | `*_reconstruction.png`  | Sinal de referência × ACOR × TDF               |
+| PNG  | `*_spectrum.png`        | Magnitudes harmônicas estimadas                |
+| JSON | `*_meta.json`           | Melhor solução, erros, baseline e metadados    |
+
+---
+
 ## Saídas geradas
 
-A cada execução, o ACO gera automaticamente:
+As aplicações geram automaticamente arquivos em `outputs/` ou no diretório definido por `--out_dir`:
 
 | Tipo | Arquivo             | Descrição                                  |
 | ---- | ------------------- | ------------------------------------------ |
 | CSV  | `*_history.csv`     | Histórico por iteração                     |
 | PNG  | `*_convergence.png` | Curva de convergência                      |
-| PNG  | `*_heatmap.png`     | Mapa de contorno da função                 |
-| PNG  | `*_surface3d.png`   | Superfície 3D com colormap                 |
-| JSON | `*_meta.json`       | Melhor solução e ótimo analítico projetado |
+| PNG  | `*_heatmap.png`     | Mapa de contorno da função agrícola        |
+| PNG  | `*_surface3d.png`   | Superfície 3D agrícola                     |
+| PNG  | `*_reconstruction.png` | Reconstrução do sinal elétrico          |
+| PNG  | `*_spectrum.png`    | Espectro harmônico estimado                |
+| JSON | `*_meta.json`       | Metadados e melhor solução                 |
 
 ---
